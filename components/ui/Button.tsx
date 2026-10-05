@@ -41,9 +41,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizes = {
-      sm: 'text-xs px-2.5 py-1.5 gap-1.5',
-      md: 'text-xs sm:text-sm px-3.5 py-1.5 sm:py-2 gap-2',
-      lg: 'text-sm sm:text-base px-4 py-2.5 gap-2.5',
+      sm: 'text-xs px-3 py-2 sm:px-2.5 sm:py-1.5 gap-1.5 whitespace-nowrap',
+      md: 'text-xs sm:text-sm px-3.5 py-2 gap-2 whitespace-nowrap',
+      lg: 'text-sm sm:text-base px-4 py-2.5 gap-2.5 whitespace-nowrap',
     };
 
     return (

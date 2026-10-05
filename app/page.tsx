@@ -8,11 +8,12 @@ import { LeadStatsCards } from '@/components/leads/LeadStatsCards';
 import { LeadFiltersBar } from '@/components/leads/LeadFiltersBar';
 import { LeadTable } from '@/components/leads/LeadTable';
 import { DeleteConfirmModal } from '@/components/leads/DeleteConfirmModal';
+import { QuickAIModal } from '@/components/leads/QuickAIModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonStats, SkeletonRow, SkeletonCard } from '@/components/ui/LoadingState';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
-import { Plus, Users, SearchX, AlertCircle } from 'lucide-react';
+import { Plus, Users, SearchX, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function DashboardPage() {
   // Master lead dataset in memory
@@ -28,6 +29,9 @@ export default function DashboardPage() {
   // Deletion modal state
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Quick AI modal state (open directly from the leads list)
+  const [aiLead, setAiLead] = useState<Lead | null>(null);
 
   // Subtle action feedback toast
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -136,7 +140,7 @@ export default function DashboardPage() {
 
   // Optimistic status update
   const handleStatusChange = async (leadId: string, newStatus: FollowUpStatus) => {
-    const previousLeads = allLeads;
+    const previousLead = allLeads.find((l) => l.id === leadId);
 
     // 1. Update UI immediately
     setAllLeads((prev) =>
@@ -164,8 +168,10 @@ export default function DashboardPage() {
       );
       setToast({ message: 'Status updated', type: 'success' });
     } catch {
-      // Revert if failed
-      setAllLeads(previousLeads);
+      // Revert only the affected lead so concurrent optimistic updates survive
+      if (previousLead) {
+        setAllLeads((prev) => prev.map((lead) => (lead.id === leadId ? previousLead : lead)));
+      }
       setToast({ message: "Couldn't update lead", type: 'error' });
     }
   };
@@ -175,7 +181,7 @@ export default function DashboardPage() {
     if (!leadToDelete) return;
 
     const leadId = leadToDelete.id;
-    const previousLeads = allLeads;
+    const previousLead = allLeads.find((l) => l.id === leadId);
 
     // 1. Immediately remove from local list and close modal
     setIsDeleting(true);
@@ -189,13 +195,20 @@ export default function DashboardPage() {
       });
       const data = await res.json();
 
+      if (res.status === 404) {
+        // Lead already removed server-side — nothing to revert
+        setToast({ message: 'Lead deleted', type: 'success' });
+        return;
+      }
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Failed to delete lead from server');
       }
       setToast({ message: 'Lead deleted', type: 'success' });
     } catch {
-      // Revert if failed
-      setAllLeads(previousLeads);
+      // Re-insert only the deleted lead so concurrent optimistic updates survive
+      if (previousLead) {
+        setAllLeads((prev) => (prev.some((l) => l.id === leadId) ? prev : [previousLead, ...prev]));
+      }
       setToast({ message: "Couldn't delete lead", type: 'error' });
     } finally {
       setIsDeleting(false);
@@ -220,7 +233,8 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="self-start sm:self-auto">
+          {/* Navbar already exposes this CTA on small screens */}
+          <div className="hidden sm:block self-start sm:self-auto">
             <Link href="/leads/new">
               <Button variant="primary" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />}>
                 Add Lead
@@ -248,6 +262,7 @@ export default function DashboardPage() {
         ) : (
           <LeadStatsCards
             stats={stats}
+            totalEvents={availableEvents.length}
             selectedStatus={statusFilter}
             onSelectStatus={(status) => setStatusFilter(status)}
           />
@@ -255,23 +270,32 @@ export default function DashboardPage() {
 
         {/* Action Priority Banner - Answers "Which leads need attention?" */}
         {!isLoading && stats.pending > 0 && statusFilter !== 'pending' && (
-          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3.5 sm:px-4 py-2.5 rounded-lg bg-amber-50/80 border border-amber-200/90 text-xs text-amber-900 shadow-2xs">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-              <span className="font-semibold text-amber-950">Action required:</span>
-              <span className="text-amber-800 truncate">
-                {stats.pending} {stats.pending === 1 ? 'attendee requires' : 'attendees require'} follow-up outreach.
+          <button
+            type="button"
+            onClick={() => setStatusFilter('pending')}
+            className="mb-6 w-full flex items-center gap-2.5 px-3.5 sm:px-4 py-2.5 rounded-lg bg-amber-50/80 border border-amber-200/90 text-left text-xs text-amber-900 shadow-2xs hover:bg-amber-100/60 hover:border-amber-300 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600"
+          >
+            <span
+              className="w-2 h-2 rounded-full bg-amber-500 shrink-0 animate-pulse"
+              aria-hidden="true"
+            />
+            <span className="flex-1 min-w-0 block leading-relaxed">
+              <span className="font-semibold text-amber-950">Action required:</span>{' '}
+              <span className="text-amber-800">
+                {stats.pending} {stats.pending === 1 ? 'attendee requires' : 'attendees require'}{' '}
+                follow-up outreach.
               </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setStatusFilter('pending')}
-              className="self-start sm:self-auto inline-flex items-center gap-1 font-semibold text-amber-900 hover:text-amber-950 underline underline-offset-2 hover:no-underline cursor-pointer shrink-0"
-            >
-              <span>View pending {stats.pending === 1 ? 'lead' : 'leads'}</span>
-              <span aria-hidden="true">&rarr;</span>
-            </button>
-          </div>
+            </span>
+            <span className="shrink-0 inline-flex items-center gap-1 font-semibold text-amber-900 group-hover:text-amber-950 transition-colors">
+              <span className="hidden sm:inline">
+                View pending {stats.pending === 1 ? 'lead' : 'leads'}
+              </span>
+              <ArrowRight
+                className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
+            </span>
+          </button>
         )}
 
         {/* Search & Filters - Instant local interactions */}
@@ -309,6 +333,8 @@ export default function DashboardPage() {
             leads={filteredLeads}
             onDeleteClick={(lead) => setLeadToDelete(lead)}
             onStatusChange={handleStatusChange}
+            onAIClick={(lead) => setAiLead(lead)}
+            onFeedback={(msg, type) => setToast({ message: msg, type: type || 'success' })}
           />
         ) : isFiltered ? (
           <EmptyState
@@ -340,6 +366,16 @@ export default function DashboardPage() {
         onClose={() => setLeadToDelete(null)}
         onConfirm={handleDeleteConfirm}
         isDeleting={isDeleting}
+      />
+
+      {/* Quick AI Modal — run from the leads list without opening a lead.
+          Keyed by lead id so results reset when switching leads. */}
+      <QuickAIModal
+        key={aiLead?.id ?? 'none'}
+        lead={aiLead}
+        isOpen={Boolean(aiLead)}
+        onClose={() => setAiLead(null)}
+        onFeedback={(msg, type) => setToast({ message: msg, type: type || 'success' })}
       />
 
       {/* Action Feedback Toast */}

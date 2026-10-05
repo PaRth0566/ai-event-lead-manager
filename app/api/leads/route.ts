@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getLeads, createLead, getLeadStats, getUniqueEvents, getDatabaseStatus } from '@/lib/db/leads';
+import { getLeads, createLead, getDatabaseStatus } from '@/lib/db/leads';
 import { leadSchema } from '@/lib/validations/lead';
 import { FollowUpStatus } from '@/types/lead';
 
@@ -14,11 +14,17 @@ export async function GET(request: NextRequest) {
       ? (statusParam as FollowUpStatus | 'all')
       : undefined;
 
-    const [leads, stats, events] = await Promise.all([
-      getLeads({ search, status, event }),
-      getLeadStats(),
-      getUniqueEvents(),
-    ]);
+    // Single DB round trip — stats and events are derived from the result
+    const leads = await getLeads({ search, status, event });
+
+    const stats = {
+      total: leads.length,
+      pending: leads.filter((l) => l.follow_up_status === 'pending').length,
+      contacted: leads.filter((l) => l.follow_up_status === 'contacted').length,
+      completed: leads.filter((l) => l.follow_up_status === 'completed').length,
+    };
+
+    const events = Array.from(new Set(leads.map((l) => l.event).filter(Boolean))).sort();
 
     const dbStatus = getDatabaseStatus();
 

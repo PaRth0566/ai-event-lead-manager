@@ -10,6 +10,8 @@ export interface ModalProps {
   description?: string;
   children: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl';
+  /** Set false to block Escape/backdrop dismissal (e.g. while a destructive action is in-flight) */
+  dismissible?: boolean;
 }
 
 export function Modal({
@@ -19,10 +21,11 @@ export function Modal({
   description,
   children,
   maxWidth = 'md',
+  dismissible = true,
 }: ModalProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape' && isOpen && dismissible) {
         onClose();
       }
     };
@@ -31,10 +34,10 @@ export function Modal({
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, dismissible, onClose]);
 
   if (!isOpen) return null;
 
@@ -49,14 +52,14 @@ export function Modal({
     <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/40 transition-opacity"
-        onClick={onClose}
+        className="fixed inset-0 bg-slate-900/40 transition-opacity animate-fade-in"
+        onClick={dismissible ? onClose : undefined}
         aria-hidden="true"
       />
 
       <div className="min-h-full flex items-center justify-center p-4 text-center sm:p-0">
         <div
-          className={`relative transform overflow-hidden rounded-lg bg-white text-left shadow-lg transition-all w-full ${maxWidths[maxWidth]} p-5 sm:p-6 sm:my-8 border border-slate-200`}
+          className={`relative transform overflow-hidden rounded-lg bg-white text-left shadow-lg transition-all w-full ${maxWidths[maxWidth]} p-5 sm:p-6 sm:my-8 border border-slate-200 animate-scale-in`}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-start justify-between pb-3 mb-2 border-b border-slate-100">

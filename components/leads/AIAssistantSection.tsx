@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Lead } from '@/types/lead';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { copyTextToClipboard } from '@/lib/clipboard';
 import { FileText, Send, Copy, Check, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface AIAssistantSectionProps {
@@ -85,8 +87,8 @@ export function AIAssistantSection({ lead, onFeedback }: AIAssistantSectionProps
   };
 
   const copyToClipboard = async (text: string, type: 'summary' | 'draft') => {
-    try {
-      await navigator.clipboard.writeText(text);
+    const ok = await copyTextToClipboard(text);
+    if (ok) {
       if (type === 'summary') {
         setSummaryCopied(true);
         onFeedback?.('Summary copied', 'success');
@@ -96,8 +98,8 @@ export function AIAssistantSection({ lead, onFeedback }: AIAssistantSectionProps
         onFeedback?.('Follow-up copied', 'success');
         setTimeout(() => setDraftCopied(false), 2000);
       }
-    } catch (err) {
-      console.error('Clipboard copy failed:', err);
+    } else {
+      onFeedback?.("Couldn't copy to clipboard", 'error');
     }
   };
 
@@ -201,15 +203,17 @@ export function AIAssistantSection({ lead, onFeedback }: AIAssistantSectionProps
                     </>
                   )}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSummarize}
-                  disabled={isSummarizing}
-                  className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer"
-                  title="Regenerate"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isSummarizing ? 'animate-spin' : ''}`} />
-                </button>
+                <Tooltip label="Regenerate summary">
+                  <button
+                    type="button"
+                    onClick={handleSummarize}
+                    disabled={isSummarizing}
+                    className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer disabled:cursor-not-allowed"
+                    aria-label="Regenerate summary"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isSummarizing ? 'animate-spin' : ''}`} />
+                  </button>
+                </Tooltip>
               </div>
             </div>
 
@@ -242,15 +246,17 @@ export function AIAssistantSection({ lead, onFeedback }: AIAssistantSectionProps
                     </>
                   )}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleDraftFollowUp}
-                  disabled={isDrafting}
-                  className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer"
-                  title="Regenerate"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isDrafting ? 'animate-spin' : ''}`} />
-                </button>
+                <Tooltip label="Regenerate draft">
+                  <button
+                    type="button"
+                    onClick={handleDraftFollowUp}
+                    disabled={isDrafting}
+                    className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer disabled:cursor-not-allowed"
+                    aria-label="Regenerate draft"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isDrafting ? 'animate-spin' : ''}`} />
+                  </button>
+                </Tooltip>
               </div>
             </div>
 

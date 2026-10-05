@@ -21,7 +21,7 @@ describe('Leads Repository CRUD Operations', () => {
     const newLeadInput = {
       name: 'Test Attendee',
       company: 'Test Ventures',
-      email: 'test@ventures.example.com',
+      email: 'test.attendee@ventureshq.com',
       event: 'TestCon 2026',
       notes: 'Initial test interaction notes.',
       follow_up_status: 'pending' as const,
@@ -30,7 +30,7 @@ describe('Leads Repository CRUD Operations', () => {
     const created = await createLead(newLeadInput);
     expect(created.id).toBeDefined();
     expect(created.name).toBe('Test Attendee');
-    expect(created.email).toBe('test@ventures.example.com');
+    expect(created.email).toBe('test.attendee@ventureshq.com');
     expect(created.follow_up_status).toBe('pending');
 
     // Verify it is retrievable by ID
@@ -43,7 +43,7 @@ describe('Leads Repository CRUD Operations', () => {
     const lead = await createLead({
       name: 'Update Target',
       company: 'Initial Corp',
-      email: 'update@target.example.com',
+      email: 'updates@targetcorp.com',
       event: 'Summit 2026',
       notes: 'Before update.',
       follow_up_status: 'pending',
@@ -63,7 +63,7 @@ describe('Leads Repository CRUD Operations', () => {
     const lead = await createLead({
       name: 'Delete Target',
       company: 'Ephemeral Inc',
-      email: 'delete@ephemeral.example.com',
+      email: 'delete.me@ephemeralhq.com',
       event: 'Flash Summit',
       notes: 'To be deleted.',
       follow_up_status: 'pending',

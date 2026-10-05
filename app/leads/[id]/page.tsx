@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { cache } from 'react';
 import Link from 'next/link';
 import { getLeadById } from '@/lib/db/leads';
 import { Navbar } from '@/components/Navbar';
@@ -10,9 +10,12 @@ interface LeadPageProps {
   params: Promise<{ id: string }>;
 }
 
+// Dedupes the fetch across generateMetadata and the page render within one request
+const getLeadCached = cache(getLeadById);
+
 export async function generateMetadata({ params }: LeadPageProps) {
   const { id } = await params;
-  const lead = await getLeadById(id);
+  const lead = await getLeadCached(id);
 
   if (!lead) {
     return { title: 'Lead Not Found — AI Event Lead Manager' };
@@ -26,7 +29,7 @@ export async function generateMetadata({ params }: LeadPageProps) {
 
 export default async function LeadDetailPage({ params }: LeadPageProps) {
   const { id } = await params;
-  const lead = await getLeadById(id);
+  const lead = await getLeadCached(id);
 
   if (!lead) {
     return (

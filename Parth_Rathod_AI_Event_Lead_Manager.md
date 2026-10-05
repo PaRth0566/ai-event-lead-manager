@@ -11,6 +11,7 @@ The application resolves this problem by providing a streamlined, mobile-friendl
 ## 2. Key Features
 
 - **Lead Creation**: Capture essential attendee details including full name, company, email address, event/conference name, follow-up status, and conversational notes with client- and server-side validation.
+- **Inline List Actions**: Status updates, AI summarization, follow-up drafting (with clipboard copy), and email copying are available directly from the leads list — without navigating into individual lead pages.
 - **Lead Viewing & Details**: Comprehensive lead detail views showing structured contact info, event metadata, creation/update timestamps, and dedicated AI action panels.
 - **Lead Editing**: Inline editing capabilities allowing teams to update contact details, event context, interaction notes, and pipeline status.
 - **Lead Deletion**: Secure deletion flow with confirmation protection to prevent accidental removal of records.
@@ -20,7 +21,7 @@ The application resolves this problem by providing a streamlined, mobile-friendl
 - **Persistent Database Storage**: Production-grade relational persistence in Supabase PostgreSQL featuring UUID primary keys, indexes on queried dimensions, and automated `updated_at` database triggers.
 - **AI Note Summarization**: Server-side extraction of key pain points, expressed interests, and concrete action items from raw meeting notes.
 - **AI Follow-up Generation**: Context-aware follow-up email drafting referencing the specific event and conversation points, accompanied by a one-click clipboard copy utility.
-- **Responsive B2B Interface**: Mobile-first responsive layout with accessible contrast, empty states, loading skeletons, and interactive state feedback across phone, tablet, and desktop screens.
+- **Responsive B2B Interface**: Mobile-first responsive layout with accessible contrast, empty states, loading skeletons, insight-rich frosted-glass hover tooltips (lead aging, activity recency, note previews, pipeline percentages), and interactive state feedback across phone, tablet, and desktop screens.
 
 ---
 
@@ -135,7 +136,7 @@ The application has been verified through automated test suites, static analysis
   - *AI Services*: Context extraction, parameter validation, and prompt integrity.
 - **TypeScript Static Verification**: **0 errors** (`bun x tsc --noEmit` executed cleanly under strict mode).
 - **ESLint Code Quality**: **0 errors, 0 warnings** (`bun run lint` passing across all source directories).
-- **Production Build Verification**: **Successful compilation** via Next.js Turbopack (`bun run build`), verifying pre-rendering and route generation across all 9 static and dynamic routes.
+- **Production Build Verification**: **Successful compilation** via Next.js Turbopack (`bun run build`), verifying pre-rendering and route generation across all application routes (4 pages + 4 API route handlers).
 
 ---
 
@@ -209,7 +210,7 @@ The application utilizes the following environment variables:
 3. **Server-Side AI Abstraction**: AI invocations are isolated behind backend route handlers rather than client SDKs. This safeguards private API keys and permits provider swapping (OpenAI, Gemini) with zero frontend changes.
 4. **Dual-Tier Zod Validation**: Validating inputs on the client ensures immediate UI feedback, while re-validating on the server ensures database integrity against direct or malformed API requests.
 5. **Decoupled Repository Pattern**: Application routes communicate with a repository abstraction (`lib/db/leads.ts`) rather than embedding raw SQL queries in UI views, enabling clean code separation and seamless testability.
-6. **Purpose-Driven B2B UX**: Designed around quick data entry with auto-focused inputs, accessible contrast, mobile-friendly layouts, and purposeful micro-interactions rather than distracting animations.
+6. **Purpose-Driven B2B UX**: Designed around quick data entry with auto-focused inputs, accessible contrast, mobile-friendly layouts, contextual CSS-only tooltips on icon actions, and purposeful micro-interactions (animated toasts and modal transitions) rather than distracting animations.
 
 ---
 

@@ -21,7 +21,13 @@ export function DeleteConfirmModal({
   if (!lead) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm" title="Delete lead?">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth="sm"
+      title="Delete lead?"
+      dismissible={!isDeleting}
+    >
       <div className="space-y-4">
         <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
           This will permanently remove <strong>{lead.name}</strong> from your records. This action cannot be undone.

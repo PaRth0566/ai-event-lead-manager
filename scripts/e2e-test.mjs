@@ -11,7 +11,7 @@ async function run() {
   const newLead = {
     name: 'Vikram Malhotra',
     company: 'Horizon AI',
-    email: 'vikram@horizonai.example.com',
+    email: 'vikram.malhotra@horizonai.com',
     event: 'Tech Summit 2026',
     notes: 'Met Vikram at the networking lounge. He leads engineering. Looking for automated follow-up workflows and requested a pilot trial next month.',
     follow_up_status: 'pending',

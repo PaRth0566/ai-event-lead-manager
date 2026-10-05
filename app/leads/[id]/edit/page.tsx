@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { cache } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getLeadById } from '@/lib/db/leads';
@@ -11,9 +11,12 @@ interface EditLeadPageProps {
   params: Promise<{ id: string }>;
 }
 
+// Dedupes the fetch across generateMetadata and the page render within one request
+const getLeadCached = cache(getLeadById);
+
 export async function generateMetadata({ params }: EditLeadPageProps) {
   const { id } = await params;
-  const lead = await getLeadById(id);
+  const lead = await getLeadCached(id);
 
   if (!lead) {
     return { title: 'Edit Lead — Not Found' };
@@ -26,7 +29,7 @@ export async function generateMetadata({ params }: EditLeadPageProps) {
 
 export default async function EditLeadPage({ params }: EditLeadPageProps) {
   const { id } = await params;
-  const lead = await getLeadById(id);
+  const lead = await getLeadCached(id);
 
   if (!lead) {
     notFound();

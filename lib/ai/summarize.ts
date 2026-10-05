@@ -1,4 +1,5 @@
 import { generateAICompletion } from './provider';
+import { buildLocalSummary } from '@/lib/summary';
 
 interface SummarizeParams {
   notes: string;
@@ -26,58 +27,6 @@ STRICT GUIDELINES:
    - Concrete next steps / commitments (if specified)
 4. Keep the summary under 120 words. Use clear, bulleted or structured formatting.
 5. If certain information is missing (e.g., no next steps mentioned), simply omit it without fabricating.`;
-
-/**
- * Intelligent deterministic local synthesizer
- * Parses actual sentences and extracts key points without external network calls
- */
-function localSynthesizeSummary({ notes, name, company, event }: SummarizeParams): string {
-  const cleanNotes = notes.trim();
-  const sentences = cleanNotes
-    .split(/(?<=[.?!])\s+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const painPointKeywords = ['struggle', 'problem', 'pain', 'challenge', 'issue', 'lag', 'too much time', 'slow', 'manual', 'replace'];
-  const interestKeywords = ['interested', 'looking for', 'need', 'wants', 'express', 'discussed', 'showcase', 'attracted', 'explore'];
-  const nextStepKeywords = ['demo', 'call', 'meeting', 'walkthrough', 'next week', 'tuesday', 'monday', 'scheduled', 'pilot', 'deck', 'rollout', 'follow up', 'loop in', 'contract'];
-
-  const painPoints = sentences.filter((s) => painPointKeywords.some((k) => s.toLowerCase().includes(k)));
-  const interests = sentences.filter((s) => interestKeywords.some((k) => s.toLowerCase().includes(k)) && !painPoints.includes(s));
-  const nextSteps = sentences.filter((s) => nextStepKeywords.some((k) => s.toLowerCase().includes(k)));
-
-  const bullets: string[] = [];
-
-  // Attendee & Event Context
-  if (name && company) {
-    bullets.push(`**Lead Context**: Met ${name} from ${company}${event ? ` at ${event}` : ''}.`);
-  } else if (sentences[0]) {
-    bullets.push(`**Lead Context**: ${sentences[0]}`);
-  }
-
-  // Pain Points
-  if (painPoints.length > 0) {
-    bullets.push(`**Pain Point / Challenge**: ${painPoints.join(' ')}`);
-  }
-
-  // Interest / Discussion
-  if (interests.length > 0) {
-    bullets.push(`**Areas of Interest**: ${interests.join(' ')}`);
-  } else if (sentences.length > 1 && !painPoints.includes(sentences[1]) && !nextSteps.includes(sentences[1])) {
-    bullets.push(`**Discussion Highlights**: ${sentences[1]}`);
-  }
-
-  // Next Steps
-  if (nextSteps.length > 0) {
-    bullets.push(`**Actionable Next Steps**: ${nextSteps.join(' ')}`);
-  }
-
-  if (bullets.length === 0) {
-    return cleanNotes;
-  }
-
-  return bullets.join('\n\n');
-}
 
 /**
  * Summarize lead interaction notes
@@ -114,8 +63,8 @@ Please provide a concise, factual summary following the required guidelines.`;
     };
   }
 
-  // Use local contextual synthesis if no external provider was configured
-  const localSummary = localSynthesizeSummary(params);
+  // Use the shared deterministic synthesizer if no external provider was configured
+  const localSummary = buildLocalSummary(params);
   return {
     summary: localSummary,
     provider: 'local_nlp_engine',

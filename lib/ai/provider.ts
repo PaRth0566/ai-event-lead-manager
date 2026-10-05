@@ -151,6 +151,8 @@ export async function generateAICompletion(options: AIRequestOptions): Promise<A
         if (text) {
           return { text, provider: 'anthropic', isFallback: false };
         }
+      } else {
+        console.warn('Anthropic API returned non-OK response:', res.status, await res.text());
       }
     } catch (err) {
       console.warn('Anthropic request failed, switching to local intelligence fallback:', err);

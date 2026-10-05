@@ -2,13 +2,15 @@ import { Lead, CreateLeadInput, UpdateLeadInput, LeadStats, LeadFilters } from '
 import { getSupabaseServerClient, isSupabaseConfigured } from './supabase';
 import { randomUUID } from 'crypto';
 
-// In-memory fallback dataset for seamless initial evaluation if Supabase credentials are pending
+// In-memory demo dataset — used ONLY when Supabase credentials are not configured.
+// When Supabase IS configured, query errors propagate up so the API layer can return
+// an honest error instead of silently writing to a store that reads never see.
 const initialDemoLeads: Lead[] = [
   {
     id: 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
     name: 'Rahul Sharma',
     company: 'Acme Technologies',
-    email: 'rahul.sharma@acmetech.example.com',
+    email: 'rahul.sharma@acmetech.com',
     event: 'Tech Summit 2026',
     notes:
       'Met Rahul at the AI in Enterprise booth at Tech Summit 2026. He manages sales operations at Acme. They currently struggle with disjointed customer reporting across 4 regional hubs. He expressed high interest in our analytics and automated reporting module, and explicitly requested a 30-minute product walkthrough next Tuesday at 2 PM IST.',
@@ -20,7 +22,7 @@ const initialDemoLeads: Lead[] = [
     id: 'b2c3d4e5-f6a7-4b6c-9d0e-1f2a3b4c5d6e',
     name: 'Elena Rostova',
     company: 'Vanguard Cloud Solutions',
-    email: 'elena.rostova@vanguardcloud.example.io',
+    email: 'elena.rostova@vanguardcloud.io',
     event: 'SaaS Expo 2026',
     notes:
       'Elena attended our keynote session on unified pipeline architecture. She is the VP of Engineering at Vanguard. Their current infrastructure spends 15% too much time on manual data ETL. Discussed our automated connector SDK. Sent an introductory slide deck; she replied acknowledging receipt and wants to loop in her lead architect before committing to a pilot.',
@@ -32,7 +34,7 @@ const initialDemoLeads: Lead[] = [
     id: 'c3d4e5f6-a7b8-4c7d-0e1f-2a3b4c5d6e7f',
     name: 'Aarav Patel',
     company: 'Nexus FinTech',
-    email: 'aarav.patel@nexusfin.example.org',
+    email: 'aarav.patel@nexusfintech.com',
     event: 'ProductCon Mumbai',
     notes:
       'Aarav stopped by after the fireside chat. Heading Product Growth at Nexus. They need real-time fraud monitoring alerts integrated with their internal dashboard. Completed two technical validation calls and verified security compliance checklist. Contract signed for Q2 rollout; onboarding kick-off scheduled for April 10th.',
@@ -44,7 +46,7 @@ const initialDemoLeads: Lead[] = [
     id: 'd4e5f6a7-b8c9-4d8e-1f2a-3b4c5d6e7f8a',
     name: 'Sarah Jenkins',
     company: 'Pulse Dynamics',
-    email: 'sarah.j@pulsedynamics.example.com',
+    email: 'sarah.jenkins@pulsedynamics.com',
     event: 'Startup Connect 2026',
     notes:
       'Met Sarah at the founder lounge. She is building an AI-assisted healthcare workflow engine. They are looking to replace their current transcription API with something that has lower latency and HIPAA-compliant data residency. Asked for pricing tiers for volume above 100k requests/month.',
@@ -56,7 +58,7 @@ const initialDemoLeads: Lead[] = [
     id: 'e5f6a7b8-c9d0-4e9f-2a3b-4c5d6e7f8a9b',
     name: 'Devon Miller',
     company: 'HyperScale Retail',
-    email: 'devon.miller@hyperscale.example.com',
+    email: 'devon.miller@hyperscaleretail.com',
     event: 'Tech Summit 2026',
     notes:
       'Devon is Senior Director of Supply Chain Systems at HyperScale Retail. He noticed our showcase on real-time event alerts. They suffer from inventory stockout lag across 200 stores. Sent our benchmark case study and followed up via LinkedIn. Waiting on budget approval from their quarterly steering committee.',
@@ -93,42 +95,37 @@ export async function getLeads(filters?: LeadFilters): Promise<Lead[]> {
   const supabase = getSupabaseServerClient();
 
   if (supabase) {
-    try {
-      let query = supabase.from('leads').select('*').order('created_at', { ascending: false });
+    let query = supabase.from('leads').select('*').order('created_at', { ascending: false });
 
-      if (filters?.status && filters.status !== 'all') {
-        query = query.eq('follow_up_status', filters.status);
-      }
-
-      if (filters?.event && filters.event !== 'all') {
-        query = query.eq('event', filters.event);
-      }
-
-      const { data, error } = await query;
-      if (error) {
-        console.error('Supabase getLeads error:', error);
-        throw new Error(error.message);
-      }
-
-      let results: Lead[] = data || [];
-
-      // Apply text search on name, company, email, event
-      if (filters?.search && filters.search.trim()) {
-        const s = filters.search.trim().toLowerCase();
-        results = results.filter(
-          (lead) =>
-            lead.name.toLowerCase().includes(s) ||
-            lead.company.toLowerCase().includes(s) ||
-            lead.email.toLowerCase().includes(s) ||
-            lead.event.toLowerCase().includes(s)
-        );
-      }
-
-      return results;
-    } catch (err) {
-      console.error('Failed to query Supabase, using fallback store:', err);
-      // Fallback if Supabase table not created yet
+    if (filters?.status && filters.status !== 'all') {
+      query = query.eq('follow_up_status', filters.status);
     }
+
+    if (filters?.event && filters.event !== 'all') {
+      query = query.eq('event', filters.event);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error('Supabase getLeads error:', error);
+      throw new Error(error.message);
+    }
+
+    let results: Lead[] = data || [];
+
+    // Apply text search on name, company, email, event
+    if (filters?.search && filters.search.trim()) {
+      const s = filters.search.trim().toLowerCase();
+      results = results.filter(
+        (lead) =>
+          lead.name.toLowerCase().includes(s) ||
+          lead.company.toLowerCase().includes(s) ||
+          lead.email.toLowerCase().includes(s) ||
+          lead.event.toLowerCase().includes(s)
+      );
+    }
+
+    return results;
   }
 
   // Fallback demo store
@@ -166,17 +163,13 @@ export async function getLeadById(id: string): Promise<Lead | null> {
   const supabase = getSupabaseServerClient();
 
   if (supabase) {
-    try {
-      const { data, error } = await supabase.from('leads').select('*').eq('id', id).single();
-      if (error) {
-        if (error.code === 'PGRST116') return null; // record not found
-        console.error('Supabase getLeadById error:', error);
-        throw new Error(error.message);
-      }
-      return data;
-    } catch (err) {
-      console.error('Failed to query Supabase single lead, checking demo store:', err);
+    const { data, error } = await supabase.from('leads').select('*').eq('id', id).single();
+    if (error) {
+      if (error.code === 'PGRST116') return null; // record not found
+      console.error('Supabase getLeadById error:', error);
+      throw new Error(error.message);
     }
+    return data;
   }
 
   const leads = getDemoStore();
@@ -192,31 +185,27 @@ export async function createLead(input: CreateLeadInput): Promise<Lead> {
   const supabase = getSupabaseServerClient();
 
   if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('leads')
-        .insert([
-          {
-            name: input.name.trim(),
-            company: input.company.trim(),
-            email: input.email.trim(),
-            event: input.event.trim(),
-            notes: input.notes.trim(),
-            follow_up_status: input.follow_up_status,
-          },
-        ])
-        .select()
-        .single();
+    const { data, error } = await supabase
+      .from('leads')
+      .insert([
+        {
+          name: input.name.trim(),
+          company: input.company.trim(),
+          email: input.email.trim(),
+          event: input.event.trim(),
+          notes: input.notes.trim(),
+          follow_up_status: input.follow_up_status,
+        },
+      ])
+      .select()
+      .single();
 
-      if (error) {
-        console.error('Supabase createLead error:', error);
-        throw new Error(error.message);
-      }
-
-      return data;
-    } catch (err) {
-      console.error('Failed to create in Supabase, falling back to demo store:', err);
+    if (error) {
+      console.error('Supabase createLead error:', error);
+      throw new Error(error.message);
     }
+
+    return data;
   }
 
   const newLead: Lead = {
@@ -244,34 +233,31 @@ export async function updateLead(id: string, input: UpdateLeadInput): Promise<Le
   const supabase = getSupabaseServerClient();
 
   if (supabase) {
-    try {
-      const updatePayload: Record<string, unknown> = {
-        updated_at: now,
-      };
+    const updatePayload: Record<string, unknown> = {
+      updated_at: now,
+    };
 
-      if (input.name !== undefined) updatePayload.name = input.name.trim();
-      if (input.company !== undefined) updatePayload.company = input.company.trim();
-      if (input.email !== undefined) updatePayload.email = input.email.trim();
-      if (input.event !== undefined) updatePayload.event = input.event.trim();
-      if (input.notes !== undefined) updatePayload.notes = input.notes.trim();
-      if (input.follow_up_status !== undefined) updatePayload.follow_up_status = input.follow_up_status;
+    if (input.name !== undefined) updatePayload.name = input.name.trim();
+    if (input.company !== undefined) updatePayload.company = input.company.trim();
+    if (input.email !== undefined) updatePayload.email = input.email.trim();
+    if (input.event !== undefined) updatePayload.event = input.event.trim();
+    if (input.notes !== undefined) updatePayload.notes = input.notes.trim();
+    if (input.follow_up_status !== undefined) updatePayload.follow_up_status = input.follow_up_status;
 
-      const { data, error } = await supabase
-        .from('leads')
-        .update(updatePayload)
-        .eq('id', id)
-        .select()
-        .single();
+    const { data, error } = await supabase
+      .from('leads')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single();
 
-      if (error) {
-        console.error('Supabase updateLead error:', error);
-        throw new Error(error.message);
-      }
-
-      return data;
-    } catch (err) {
-      console.error('Failed to update in Supabase, falling back to demo store:', err);
+    if (error) {
+      if (error.code === 'PGRST116') return null; // record not found
+      console.error('Supabase updateLead error:', error);
+      throw new Error(error.message);
     }
+
+    return data;
   }
 
   const store = getDemoStore();
@@ -301,16 +287,13 @@ export async function deleteLead(id: string): Promise<boolean> {
   const supabase = getSupabaseServerClient();
 
   if (supabase) {
-    try {
-      const { error } = await supabase.from('leads').delete().eq('id', id);
-      if (error) {
-        console.error('Supabase deleteLead error:', error);
-        throw new Error(error.message);
-      }
-      return true;
-    } catch (err) {
-      console.error('Failed to delete in Supabase, checking demo store:', err);
+    // .select() returns the deleted rows so a no-op delete (missing id) is detectable
+    const { data, error } = await supabase.from('leads').delete().eq('id', id).select();
+    if (error) {
+      console.error('Supabase deleteLead error:', error);
+      throw new Error(error.message);
     }
+    return (data?.length ?? 0) > 0;
   }
 
   const store = getDemoStore();

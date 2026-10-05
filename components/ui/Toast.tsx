@@ -25,7 +25,7 @@ export function Toast({ message, type = 'success', onClose, duration = 3000 }: T
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-5 left-4 right-4 sm:left-auto sm:right-5 z-50 flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg bg-slate-900 text-white text-xs font-medium shadow-lg border border-slate-800 transition-all sm:max-w-[340px]"
+      className="fixed bottom-5 left-4 right-4 sm:left-auto sm:right-5 z-50 flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg bg-slate-900 text-white text-xs font-medium shadow-lg border border-slate-800 animate-toast-in sm:max-w-[340px]"
     >
       {type === 'success' ? (
         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />

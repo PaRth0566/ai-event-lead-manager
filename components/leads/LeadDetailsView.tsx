@@ -113,6 +113,13 @@ export function LeadDetailsView({ initialLead }: LeadDetailsViewProps) {
       const res = await fetch(`/api/leads/${lead.id}`, {
         method: 'DELETE',
       });
+
+      if (res.status === 404) {
+        // Already removed server-side — still navigate back to the dashboard
+        router.push('/?action=deleted');
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Failed to delete lead');
@@ -229,7 +236,7 @@ export function LeadDetailsView({ initialLead }: LeadDetailsViewProps) {
                     aria-pressed={isActive}
                     disabled={isUpdatingStatus}
                     onClick={() => handleStatusChange(opt.value)}
-                    className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 ${
+                    className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3 sm:py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 ${
                       isActive
                         ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -328,7 +335,7 @@ export function LeadDetailsView({ initialLead }: LeadDetailsViewProps) {
                   const el = document.getElementById('ai-assistant-section');
                   el?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                className="inline-flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-md text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
               >
                 <span>Draft follow-up</span>
                 <span aria-hidden="true">&darr;</span>
@@ -337,7 +344,7 @@ export function LeadDetailsView({ initialLead }: LeadDetailsViewProps) {
                 type="button"
                 disabled={isUpdatingStatus}
                 onClick={() => handleStatusChange('contacted')}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 disabled:opacity-60"
+                className="inline-flex items-center gap-1 px-3 py-2 sm:py-1.5 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 disabled:opacity-60"
               >
                 Mark Contacted
               </button>
@@ -349,7 +356,7 @@ export function LeadDetailsView({ initialLead }: LeadDetailsViewProps) {
               type="button"
               disabled={isUpdatingStatus}
               onClick={() => handleStatusChange('completed')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-800 transition-colors shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 sm:py-1.5 rounded-md text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-800 transition-colors shadow-2xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 disabled:opacity-60"
             >
               Mark Completed
             </button>
@@ -360,7 +367,7 @@ export function LeadDetailsView({ initialLead }: LeadDetailsViewProps) {
               type="button"
               disabled={isUpdatingStatus}
               onClick={() => handleStatusChange('pending')}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 disabled:opacity-60"
+              className="inline-flex items-center gap-1 px-3 py-2 sm:py-1.5 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 disabled:opacity-60"
             >
               Reopen Follow-up
             </button>
@@ -370,14 +377,14 @@ export function LeadDetailsView({ initialLead }: LeadDetailsViewProps) {
 
       {/* Interaction Notes */}
       <Card className="border-slate-200/90 shadow-2xs">
-        <CardHeader className="bg-slate-50/70 border-b border-slate-100 p-4 sm:p-5 flex items-center justify-between">
-          <div>
+        <CardHeader className="bg-slate-50/70 border-b border-slate-100 p-4 sm:p-5 flex items-center justify-between gap-3">
+          <div className="min-w-0">
             <h2 className="text-sm font-semibold text-slate-900">Interaction Notes</h2>
             <p className="text-xs text-slate-500 mt-0.5">Discussion takeaways recorded from {lead.event}</p>
           </div>
           <Link
             href={`/leads/${lead.id}/edit`}
-            className="text-xs text-slate-600 hover:text-slate-900 font-medium hover:underline inline-flex items-center gap-1"
+            className="shrink-0 text-xs text-slate-600 hover:text-slate-900 font-medium hover:underline inline-flex items-center gap-1"
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>Edit</span>

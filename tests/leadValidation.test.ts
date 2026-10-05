@@ -6,7 +6,7 @@ describe('Lead Schema Validation', () => {
     const validLead = {
       name: 'Priya Sharma',
       company: 'Zenith Retail',
-      email: 'priya@zenithretail.example.com',
+      email: 'priya.sharma@zenithretail.com',
       event: 'Retail Tech Summit 2026',
       notes: 'Interested in inventory alerts. Requested a demo next Wednesday.',
       follow_up_status: 'pending',
@@ -24,7 +24,7 @@ describe('Lead Schema Validation', () => {
     const invalid = {
       name: '   ',
       company: 'Zenith',
-      email: 'priya@example.com',
+      email: 'priya.sharma@zenithretail.com',
       event: 'Summit',
       notes: 'Some notes',
       follow_up_status: 'pending',

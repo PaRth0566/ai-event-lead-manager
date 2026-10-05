@@ -17,7 +17,11 @@ export const metadata: Metadata = {
   description:
     'Capture, track, and manage business leads from conferences and summits with AI-powered notes summarization and intelligent follow-up email drafts.',
   keywords: ['CRM', 'Leads', 'Event Management', 'AI CRM', 'Sales Leads', 'Conference CRM'],
+  icons: {
+    icon: '/icon.svg',
+  },
 };
+
 
 export default function RootLayout({
   children,

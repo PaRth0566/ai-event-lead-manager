@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+    <linearGradient id="sparkleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Base Container -->
+  <rect width="32" height="32" rx="7.5" fill="url(#bgGrad)" />
+  
+  <!-- Calendar Badge Body -->
+  <rect x="6" y="8" width="20" height="18" rx="3.5" fill="#f8fafc" />
+  
+  <!-- Calendar Header Band -->
+  <path d="M 6 11.5 C 6 9.567 7.567 8 9.5 8 L 22.5 8 C 24.433 8 26 9.567 26 11.5 L 26 13 L 6 13 Z" fill="url(#headerGrad)" />
+  
+  <!-- Calendar Rings / Pins -->
+  <rect x="9" y="5.5" width="2.2" height="4" rx="1.1" fill="#94a3b8" />
+  <rect x="20.8" y="5.5" width="2.2" height="4" rx="1.1" fill="#94a3b8" />
+  
+  <!-- Mini Event Dots / Grid -->
+  <circle cx="10.5" cy="16.5" r="1" fill="#cbd5e1" />
+  <circle cx="14" cy="16.5" r="1" fill="#cbd5e1" />
+  <circle cx="10.5" cy="20" r="1" fill="#cbd5e1" />
+  <circle cx="14" cy="20" r="1" fill="#cbd5e1" />
+  
+  <!-- Star / Verified Lead Badge -->
+  <circle cx="20.5" cy="19" r="3.6" fill="url(#sparkleGrad)" />
+  <path d="M 18.8 19 L 20 20.2 L 22.4 17.8" stroke="#ffffff" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+</svg>

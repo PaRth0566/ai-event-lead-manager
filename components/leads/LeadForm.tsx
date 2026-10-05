@@ -38,19 +38,39 @@ export function LeadForm({ initialData, isEdit = false }: LeadFormProps) {
     { value: 'completed', label: 'Completed — Discussion resolved' },
   ];
 
+  const handleBlur = (field: keyof CreateLeadInput) => {
+    const schema = leadSchema.shape[field];
+    if (schema) {
+      const res = schema.safeParse(formData[field]);
+      if (!res.success) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: res.error.issues[0]?.message || 'Please provide a valid value',
+        }));
+      }
+    }
+  };
+
   const handleChange = (field: keyof CreateLeadInput, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors((prev) => {
-        const next = { ...prev };
-        delete next[field];
-        return next;
-      });
+      const schema = leadSchema.shape[field];
+      if (schema) {
+        const res = schema.safeParse(value);
+        if (res.success) {
+          setErrors((prev) => {
+            const next = { ...prev };
+            delete next[field];
+            return next;
+          });
+        }
+      }
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setServerError(null);
 
     const validation = leadSchema.safeParse(formData);
@@ -93,11 +113,10 @@ export function LeadForm({ initialData, isEdit = false }: LeadFormProps) {
 
       const targetId = isEdit ? initialData?.id : result.data?.id;
       if (targetId) {
-        router.push(`/leads/${targetId}`);
+        router.push(`/leads/${targetId}?action=${isEdit ? 'updated' : 'created'}`);
       } else {
-        router.push('/');
+        router.push('/?action=created');
       }
-      router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong while saving';
       setServerError(msg);
@@ -126,9 +145,11 @@ export function LeadForm({ initialData, isEdit = false }: LeadFormProps) {
           <Input
             label="Name"
             required
+            autoFocus={!isEdit}
             placeholder="e.g. Rahul Sharma"
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
+            onBlur={() => handleBlur('name')}
             error={errors.name}
             autoComplete="name"
           />
@@ -139,6 +160,7 @@ export function LeadForm({ initialData, isEdit = false }: LeadFormProps) {
             placeholder="e.g. Acme Technologies"
             value={formData.company}
             onChange={(e) => handleChange('company', e.target.value)}
+            onBlur={() => handleBlur('company')}
             error={errors.company}
             autoComplete="organization"
           />
@@ -152,6 +174,7 @@ export function LeadForm({ initialData, isEdit = false }: LeadFormProps) {
             placeholder="e.g. rahul@acme.com"
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
+            onBlur={() => handleBlur('email')}
             error={errors.email}
             autoComplete="email"
           />
@@ -173,6 +196,7 @@ export function LeadForm({ initialData, isEdit = false }: LeadFormProps) {
             placeholder="e.g. Tech Summit 2026"
             value={formData.event}
             onChange={(e) => handleChange('event', e.target.value)}
+            onBlur={() => handleBlur('event')}
             error={errors.event}
             helperText="Where did you meet this contact?"
           />
@@ -203,9 +227,11 @@ export function LeadForm({ initialData, isEdit = false }: LeadFormProps) {
             required
             rows={6}
             maxChars={2500}
+            charCount={formData.notes.length}
             placeholder="Record conversational context, pain points, topics discussed, or agreed next steps..."
             value={formData.notes}
             onChange={(e) => handleChange('notes', e.target.value)}
+            onBlur={() => handleBlur('notes')}
             error={errors.notes}
             helperText="These notes provide context for AI summaries and follow-up email drafts."
           />
@@ -224,10 +250,11 @@ export function LeadForm({ initialData, isEdit = false }: LeadFormProps) {
           type="submit"
           variant="primary"
           size="sm"
+          disabled={isSubmitting}
           isLoading={isSubmitting}
           leftIcon={<Check className="w-3.5 h-3.5" />}
         >
-          {isSubmitting ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Lead'}
+          {isSubmitting ? (isEdit ? 'Saving changes...' : 'Creating lead...') : isEdit ? 'Save Changes' : 'Create Lead'}
         </Button>
       </div>
     </form>

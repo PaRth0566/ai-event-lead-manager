@@ -8,9 +8,10 @@ import { FileText, Send, Copy, Check, AlertCircle, RefreshCw } from 'lucide-reac
 
 interface AIAssistantSectionProps {
   lead: Lead;
+  onFeedback?: (message: string, type?: 'success' | 'error') => void;
 }
 
-export function AIAssistantSection({ lead }: AIAssistantSectionProps) {
+export function AIAssistantSection({ lead, onFeedback }: AIAssistantSectionProps) {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
@@ -44,7 +45,9 @@ export function AIAssistantSection({ lead }: AIAssistantSectionProps) {
 
       setSummary(data.data.summary);
     } catch (err: unknown) {
-      setSummaryError(err instanceof Error ? err.message : "Couldn't generate summary. Please try again.");
+      const msg = err instanceof Error ? err.message : "Couldn't generate summary. Please try again.";
+      setSummaryError(msg);
+      onFeedback?.("Couldn't generate summary", 'error');
     } finally {
       setIsSummarizing(false);
     }
@@ -73,7 +76,9 @@ export function AIAssistantSection({ lead }: AIAssistantSectionProps) {
 
       setDraft(data.data.draft);
     } catch (err: unknown) {
-      setDraftError(err instanceof Error ? err.message : "Couldn't generate follow-up draft. Please try again.");
+      const msg = err instanceof Error ? err.message : "Couldn't generate follow-up draft. Please try again.";
+      setDraftError(msg);
+      onFeedback?.("Couldn't generate follow-up", 'error');
     } finally {
       setIsDrafting(false);
     }
@@ -84,9 +89,11 @@ export function AIAssistantSection({ lead }: AIAssistantSectionProps) {
       await navigator.clipboard.writeText(text);
       if (type === 'summary') {
         setSummaryCopied(true);
+        onFeedback?.('Summary copied', 'success');
         setTimeout(() => setSummaryCopied(false), 2000);
       } else {
         setDraftCopied(true);
+        onFeedback?.('Follow-up copied', 'success');
         setTimeout(() => setDraftCopied(false), 2000);
       }
     } catch (err) {
@@ -95,13 +102,13 @@ export function AIAssistantSection({ lead }: AIAssistantSectionProps) {
   };
 
   return (
-    <Card className="border-slate-200 shadow-2xs">
+    <Card id="ai-assistant-section" className="border-slate-200/90 shadow-2xs scroll-mt-20">
       <CardHeader className="bg-slate-50/70 border-b border-slate-100 p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 className="text-sm font-semibold text-slate-900">AI Assistant</h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Turn interaction notes into a concise summary or prepare a follow-up message.
+              Practical tools to summarize interaction notes or draft attendee follow-ups.
             </p>
           </div>
 
@@ -114,7 +121,7 @@ export function AIAssistantSection({ lead }: AIAssistantSectionProps) {
               className="w-full sm:w-auto"
               leftIcon={<FileText className="w-3.5 h-3.5 text-slate-600" />}
             >
-              {isSummarizing ? 'Generating summary...' : summary ? 'Regenerate Summary' : 'Summarize Notes'}
+              {isSummarizing ? 'Summarizing...' : summary ? 'Regenerate summary' : 'Summarize notes'}
             </Button>
 
             <Button
@@ -125,7 +132,7 @@ export function AIAssistantSection({ lead }: AIAssistantSectionProps) {
               className="w-full sm:w-auto"
               leftIcon={<Send className="w-3.5 h-3.5" />}
             >
-              {isDrafting ? 'Drafting follow-up...' : draft ? 'Regenerate Draft' : 'Draft Follow-up'}
+              {isDrafting ? 'Drafting...' : draft ? 'Regenerate draft' : 'Draft follow-up'}
             </Button>
           </div>
         </div>
@@ -135,9 +142,9 @@ export function AIAssistantSection({ lead }: AIAssistantSectionProps) {
         {/* Placeholder state before generation */}
         {!summary && !draft && !isSummarizing && !isDrafting && !summaryError && !draftError && (
           <div className="text-center py-6 px-4 bg-slate-50/50 rounded-lg border border-dashed border-slate-200 text-slate-500">
-            <p className="text-xs">
-              Select <strong>Summarize Notes</strong> to extract key takeaways, or{' '}
-              <strong>Draft Follow-up</strong> to generate a customized follow-up message.
+            <p className="text-xs leading-relaxed">
+              Select <strong className="text-slate-700">Summarize notes</strong> to extract structured takeaways, or{' '}
+              <strong className="text-slate-700">Draft follow-up</strong> to prepare a tailored outreach message.
             </p>
           </div>
         )}

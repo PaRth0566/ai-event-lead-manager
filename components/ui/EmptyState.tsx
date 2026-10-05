@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { Button } from './Button';
 
 export interface EmptyStateProps {
@@ -34,11 +35,11 @@ export function EmptyState({
       <div className="flex items-center gap-2">
         {actionLabel && (
           actionHref ? (
-            <a href={actionHref}>
+            <Link href={actionHref}>
               <Button variant="primary" size="sm">
                 {actionLabel}
               </Button>
-            </a>
+            </Link>
           ) : (
             <Button variant="primary" size="sm" onClick={onAction}>
               {actionLabel}

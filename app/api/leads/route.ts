@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Unable to save lead. Please check database configuration and try again.',
+        error: 'Unable to save lead at this time. Please try again.',
       },
       { status: 500 }
     );

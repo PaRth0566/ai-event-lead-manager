@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Lead, LeadStats, FollowUpStatus } from '@/types/lead';
 import { Navbar } from '@/components/Navbar';
@@ -11,23 +11,17 @@ import { DeleteConfirmModal } from '@/components/leads/DeleteConfirmModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonStats, SkeletonRow, SkeletonCard } from '@/components/ui/LoadingState';
 import { Button } from '@/components/ui/Button';
+import { Toast } from '@/components/ui/Toast';
 import { Plus, Users, SearchX, AlertCircle } from 'lucide-react';
 
 export default function DashboardPage() {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [stats, setStats] = useState<LeadStats>({ total: 0, pending: 0, contacted: 0, completed: 0 });
-  const [availableEvents, setAvailableEvents] = useState<string[]>([]);
-  const [dbStatus, setDbStatus] = useState<{ isConnectedToSupabase: boolean; provider: 'supabase' | 'demo' }>({
-    isConnectedToSupabase: false,
-    provider: 'demo',
-  });
-
+  // Master lead dataset in memory
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
+  // Filters - operated purely client-side for instant response
   const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<FollowUpStatus | 'all'>('all');
   const [eventFilter, setEventFilter] = useState('all');
 
@@ -35,28 +29,42 @@ export default function DashboardPage() {
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Debounce search input
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [search]);
+  // Subtle action feedback toast
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Fetch leads on filter change or refresh
+  // Check URL action on mount (e.g. redirected after lead creation or deletion)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get('action');
+      if (action === 'created') {
+        const timer = setTimeout(() => {
+          setToast({ message: 'Lead created', type: 'success' });
+          window.history.replaceState({}, '', '/');
+        }, 0);
+        return () => clearTimeout(timer);
+      } else if (action === 'deleted') {
+        const timer = setTimeout(() => {
+          setToast({ message: 'Lead deleted', type: 'success' });
+          window.history.replaceState({}, '', '/');
+        }, 0);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, []);
+
+  // Fetch full leads dataset on initial load or manual refresh
   useEffect(() => {
     let isCancelled = false;
 
     async function loadData() {
       try {
-        const params = new URLSearchParams();
-        if (debouncedSearch) params.set('search', debouncedSearch);
-        if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter);
-        if (eventFilter && eventFilter !== 'all') params.set('event', eventFilter);
+        setIsLoading(true);
+        setError(null);
 
-        const res = await fetch(`/api/leads?${params.toString()}`);
+        const res = await fetch('/api/leads');
         const json = await res.json();
 
         if (!isCancelled) {
@@ -64,12 +72,7 @@ export default function DashboardPage() {
             throw new Error(json.error || 'Failed to load leads from server');
           }
 
-          setLeads(json.data.leads || []);
-          setStats(json.data.stats || { total: 0, pending: 0, contacted: 0, completed: 0 });
-          setAvailableEvents(json.data.events || []);
-          if (json.data.dbStatus) {
-            setDbStatus(json.data.dbStatus);
-          }
+          setAllLeads(json.data.leads || []);
           setIsLoading(false);
         }
       } catch (err: unknown) {
@@ -87,36 +90,123 @@ export default function DashboardPage() {
     return () => {
       isCancelled = true;
     };
-  }, [debouncedSearch, statusFilter, eventFilter, refreshTrigger]);
+  }, [refreshTrigger]);
 
-  // Handle lead deletion
+  // Derive stats dynamically from all loaded leads
+  const stats: LeadStats = useMemo(() => {
+    return {
+      total: allLeads.length,
+      pending: allLeads.filter((l) => l.follow_up_status === 'pending').length,
+      contacted: allLeads.filter((l) => l.follow_up_status === 'contacted').length,
+      completed: allLeads.filter((l) => l.follow_up_status === 'completed').length,
+    };
+  }, [allLeads]);
+
+  // Derive unique events dynamically from all loaded leads
+  const availableEvents: string[] = useMemo(() => {
+    const set = new Set(allLeads.map((l) => l.event).filter(Boolean));
+    return Array.from(set).sort();
+  }, [allLeads]);
+
+  // Client-side instant filtering across all criteria
+  const filteredLeads = useMemo(() => {
+    let result = allLeads;
+
+    if (statusFilter !== 'all') {
+      result = result.filter((lead) => lead.follow_up_status === statusFilter);
+    }
+
+    if (eventFilter !== 'all') {
+      result = result.filter((lead) => lead.event === eventFilter);
+    }
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter(
+        (lead) =>
+          lead.name.toLowerCase().includes(q) ||
+          lead.company.toLowerCase().includes(q) ||
+          lead.email.toLowerCase().includes(q) ||
+          lead.event.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [allLeads, statusFilter, eventFilter, search]);
+
+  // Optimistic status update
+  const handleStatusChange = async (leadId: string, newStatus: FollowUpStatus) => {
+    const previousLeads = allLeads;
+
+    // 1. Update UI immediately
+    setAllLeads((prev) =>
+      prev.map((lead) =>
+        lead.id === leadId
+          ? { ...lead, follow_up_status: newStatus, updated_at: new Date().toISOString() }
+          : lead
+      )
+    );
+
+    // 2. Persist in background
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ follow_up_status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to update lead status on server');
+      }
+      // Reconcile with canonical server record
+      setAllLeads((prev) =>
+        prev.map((lead) => (lead.id === leadId ? data.data : lead))
+      );
+      setToast({ message: 'Status updated', type: 'success' });
+    } catch {
+      // Revert if failed
+      setAllLeads(previousLeads);
+      setToast({ message: "Couldn't update lead", type: 'error' });
+    }
+  };
+
+  // Optimistic lead deletion
   const handleDeleteConfirm = async () => {
     if (!leadToDelete) return;
+
+    const leadId = leadToDelete.id;
+    const previousLeads = allLeads;
+
+    // 1. Immediately remove from local list and close modal
     setIsDeleting(true);
+    setAllLeads((prev) => prev.filter((l) => l.id !== leadId));
+    setLeadToDelete(null);
+
+    // 2. Persist deletion in background
     try {
-      const res = await fetch(`/api/leads/${leadToDelete.id}`, {
+      const res = await fetch(`/api/leads/${leadId}`, {
         method: 'DELETE',
       });
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to delete lead');
+        throw new Error(data.error || 'Failed to delete lead from server');
       }
-
-      setLeadToDelete(null);
-      setRefreshTrigger((k) => k + 1);
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to delete lead');
+      setToast({ message: 'Lead deleted', type: 'success' });
+    } catch {
+      // Revert if failed
+      setAllLeads(previousLeads);
+      setToast({ message: "Couldn't delete lead", type: 'error' });
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const isFiltered = Boolean(debouncedSearch || statusFilter !== 'all' || eventFilter !== 'all');
+  const isFiltered = Boolean(search || statusFilter !== 'all' || eventFilter !== 'all');
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar dbStatus={dbStatus} />
+      <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Page Header */}
@@ -126,7 +216,7 @@ export default function DashboardPage() {
               Event Leads
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Manage attendees, summarize conversation notes, and draft follow-up emails.
+              Track conference contacts, prioritize follow-ups, and draft attendee outreach.
             </p>
           </div>
 
@@ -152,8 +242,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Lead Stats Cards */}
-        {isLoading && stats.total === 0 ? (
+        {/* Lead Stats Cards - Instant click-to-filter */}
+        {isLoading && allLeads.length === 0 ? (
           <SkeletonStats />
         ) : (
           <LeadStatsCards
@@ -163,7 +253,28 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* Search & Filters */}
+        {/* Action Priority Banner - Answers "Which leads need attention?" */}
+        {!isLoading && stats.pending > 0 && statusFilter !== 'pending' && (
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3.5 sm:px-4 py-2.5 rounded-lg bg-amber-50/80 border border-amber-200/90 text-xs text-amber-900 shadow-2xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+              <span className="font-semibold text-amber-950">Action required:</span>
+              <span className="text-amber-800 truncate">
+                {stats.pending} {stats.pending === 1 ? 'attendee requires' : 'attendees require'} follow-up outreach.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('pending')}
+              className="self-start sm:self-auto inline-flex items-center gap-1 font-semibold text-amber-900 hover:text-amber-950 underline underline-offset-2 hover:no-underline cursor-pointer shrink-0"
+            >
+              <span>View pending {stats.pending === 1 ? 'lead' : 'leads'}</span>
+              <span aria-hidden="true">&rarr;</span>
+            </button>
+          </div>
+        )}
+
+        {/* Search & Filters - Instant local interactions */}
         <LeadFiltersBar
           search={search}
           onSearchChange={setSearch}
@@ -172,11 +283,11 @@ export default function DashboardPage() {
           event={eventFilter}
           onEventChange={setEventFilter}
           availableEvents={availableEvents}
-          totalResults={leads.length}
+          totalResults={filteredLeads.length}
         />
 
         {/* Content Area */}
-        {isLoading ? (
+        {isLoading && allLeads.length === 0 ? (
           <div>
             <div className="hidden md:block overflow-hidden rounded-lg border border-slate-200 bg-white">
               <table className="w-full">
@@ -193,10 +304,11 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
-        ) : leads.length > 0 ? (
+        ) : filteredLeads.length > 0 ? (
           <LeadTable
-            leads={leads}
+            leads={filteredLeads}
             onDeleteClick={(lead) => setLeadToDelete(lead)}
+            onStatusChange={handleStatusChange}
           />
         ) : isFiltered ? (
           <EmptyState
@@ -229,6 +341,15 @@ export default function DashboardPage() {
         onConfirm={handleDeleteConfirm}
         isDeleting={isDeleting}
       />
+
+      {/* Action Feedback Toast */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

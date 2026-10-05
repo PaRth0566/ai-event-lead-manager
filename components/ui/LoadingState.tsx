@@ -68,9 +68,13 @@ export function SkeletonStats() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 animate-pulse">
       {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 space-y-2">
-          <div className="h-3 bg-slate-200 rounded w-20" />
-          <div className="h-7 bg-slate-200 rounded w-10" />
+        <div key={i} className="bg-white rounded-lg border border-slate-200/90 p-3 sm:p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="h-3 bg-slate-200 rounded w-20" />
+            <div className="w-2 h-2 rounded-full bg-slate-200" />
+          </div>
+          <div className="h-7 bg-slate-200 rounded w-12" />
+          <div className="h-2.5 bg-slate-100 rounded w-24" />
         </div>
       ))}
     </div>

@@ -3,13 +3,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Lead } from '@/types/lead';
+import { FollowUpStatus, Lead } from '@/types/lead';
 import { StatusBadge } from './StatusBadge';
 import { Eye, Edit3, Trash2, Calendar, Building2, Mail } from 'lucide-react';
 
 interface LeadTableProps {
   leads: Lead[];
   onDeleteClick: (lead: Lead) => void;
+  onStatusChange?: (leadId: string, newStatus: FollowUpStatus) => void;
 }
 
 function formatDate(isoString: string): string {
@@ -25,7 +26,7 @@ function formatDate(isoString: string): string {
   }
 }
 
-export function LeadTable({ leads, onDeleteClick }: LeadTableProps) {
+export function LeadTable({ leads, onDeleteClick, onStatusChange }: LeadTableProps) {
   const router = useRouter();
 
   const handleRowClick = (leadId: string) => {
@@ -122,8 +123,31 @@ export function LeadTable({ leads, onDeleteClick }: LeadTableProps) {
                 </td>
 
                 {/* Status */}
-                <td className="py-3 px-3 whitespace-nowrap">
-                  <StatusBadge status={lead.follow_up_status} size="sm" />
+                <td className="py-3 px-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                  {onStatusChange ? (
+                    <select
+                      aria-label={`Update status for ${lead.name}`}
+                      value={lead.follow_up_status}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onStatusChange(lead.id, e.target.value as FollowUpStatus);
+                      }}
+                      className={`text-[11px] font-medium rounded-md px-2 py-0.5 border cursor-pointer focus:outline-none focus:ring-1 focus:ring-slate-900 transition-colors ${
+                        lead.follow_up_status === 'pending'
+                          ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100/70'
+                          : lead.follow_up_status === 'contacted'
+                          ? 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100/70'
+                          : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100/70'
+                      }`}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  ) : (
+                    <StatusBadge status={lead.follow_up_status} size="sm" />
+                  )}
                 </td>
 
                 {/* Last Updated */}
@@ -203,8 +227,31 @@ export function LeadTable({ leads, onDeleteClick }: LeadTableProps) {
                   </span>
                 </div>
               </div>
-              <div className="shrink-0">
-                <StatusBadge status={lead.follow_up_status} size="sm" />
+              <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                {onStatusChange ? (
+                  <select
+                    aria-label={`Update status for ${lead.name}`}
+                    value={lead.follow_up_status}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      onStatusChange(lead.id, e.target.value as FollowUpStatus);
+                    }}
+                    className={`text-[11px] font-medium rounded-md px-2 py-0.5 border cursor-pointer focus:outline-none focus:ring-1 focus:ring-slate-900 transition-colors ${
+                      lead.follow_up_status === 'pending'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : lead.follow_up_status === 'contacted'
+                        ? 'bg-blue-50 text-blue-800 border-blue-200'
+                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    }`}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                ) : (
+                  <StatusBadge status={lead.follow_up_status} size="sm" />
+                )}
               </div>
             </div>
 

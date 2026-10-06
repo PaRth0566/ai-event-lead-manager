@@ -1,20 +1,4 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
-
-export function LoadingSpinner({ message = 'Loading...', size = 'md' }: { message?: string; size?: 'sm' | 'md' | 'lg' }) {
-  const sizes = {
-    sm: 'w-3.5 h-3.5',
-    md: 'w-5 h-5',
-    lg: 'w-7 h-7',
-  };
-
-  return (
-    <div className="flex flex-col items-center justify-center p-8 gap-2.5 text-slate-500">
-      <Loader2 className={`${sizes[size]} animate-spin text-slate-800`} />
-      {message && <p className="text-xs font-medium text-slate-600">{message}</p>}
-    </div>
-  );
-}
 
 export function SkeletonRow() {
   return (

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
 import { Lead, LeadStats, FollowUpStatus } from '@/types/lead';
 import { Navbar } from '@/components/Navbar';
 import { LeadStatsCards } from '@/components/leads/LeadStatsCards';
@@ -13,7 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonStats, SkeletonRow, SkeletonCard } from '@/components/ui/LoadingState';
 import { Button } from '@/components/ui/Button';
 import { Toast } from '@/components/ui/Toast';
-import { Plus, Users, SearchX, AlertCircle, ArrowRight } from 'lucide-react';
+import { Users, SearchX, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function DashboardPage() {
   // Master lead dataset in memory
@@ -231,15 +230,6 @@ export default function DashboardPage() {
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
               Track conference contacts, prioritize follow-ups, and draft attendee outreach.
             </p>
-          </div>
-
-          {/* Navbar already exposes this CTA on small screens */}
-          <div className="hidden sm:block self-start sm:self-auto">
-            <Link href="/leads/new">
-              <Button variant="primary" size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />}>
-                Add Lead
-              </Button>
-            </Link>
           </div>
         </div>
 

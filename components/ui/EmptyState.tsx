@@ -9,8 +9,6 @@ export interface EmptyStateProps {
   actionLabel?: string;
   onAction?: () => void;
   actionHref?: string;
-  secondaryActionLabel?: string;
-  onSecondaryAction?: () => void;
 }
 
 export function EmptyState({
@@ -20,8 +18,6 @@ export function EmptyState({
   actionLabel,
   onAction,
   actionHref,
-  secondaryActionLabel,
-  onSecondaryAction,
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center p-8 sm:p-12 text-center rounded-lg border border-dashed border-slate-300 bg-white/70 my-6 shadow-2xs">
@@ -32,26 +28,19 @@ export function EmptyState({
       )}
       <h3 className="text-sm font-semibold text-slate-900 mb-1">{title}</h3>
       <p className="text-xs sm:text-sm text-slate-500 max-w-sm mb-4 leading-relaxed">{description}</p>
-      <div className="flex items-center gap-2">
-        {actionLabel && (
-          actionHref ? (
-            <Link href={actionHref}>
-              <Button variant="primary" size="sm">
-                {actionLabel}
-              </Button>
-            </Link>
-          ) : (
-            <Button variant="primary" size="sm" onClick={onAction}>
+      {actionLabel && (
+        actionHref ? (
+          <Link href={actionHref}>
+            <Button variant="primary" size="sm">
               {actionLabel}
             </Button>
-          )
-        )}
-        {secondaryActionLabel && onSecondaryAction && (
-          <Button variant="outline" size="sm" onClick={onSecondaryAction}>
-            {secondaryActionLabel}
+          </Link>
+        ) : (
+          <Button variant="primary" size="sm" onClick={onAction}>
+            {actionLabel}
           </Button>
-        )}
-      </div>
+        )
+      )}
     </div>
   );
 }

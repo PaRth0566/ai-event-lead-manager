@@ -16,7 +16,7 @@ Built as a technical evaluation for the **AI Native Full Stack Intern** position
 - [AI Integration & Safety](#ai-integration)
 - [Environment Variables](#environment-variables)
 - [Local Setup](#local-setup)
-- [Deployment Guide](#deployment)
+- [Deployment Guide](#deployment-guide)
 - [Key Technical Decisions](#key-technical-decisions)
 - [Testing & Quality Assurance](#testing)
 - [Future Improvements](#future-improvements)

@@ -23,7 +23,3 @@ export function CardHeader({ children, className = '' }: { children: React.React
 export function CardBody({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return <div className={`p-4 sm:p-5 ${className}`}>{children}</div>;
 }
-
-export function CardFooter({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`p-3.5 sm:p-4 bg-slate-50/50 rounded-b-lg border-t border-slate-100 ${className}`}>{children}</div>;
-}

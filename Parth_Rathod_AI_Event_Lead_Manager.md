@@ -93,7 +93,7 @@ The application integrates two purpose-built AI workflows engineered specificall
 
 ### 1. Notes Summarization (`/api/ai/summarize`)
 - Analyzes raw conversational notes entered during or immediately after a meeting.
-- Extracts core context: **Lead Context**, **Core Pain Points**, **Expressed Interests**, and **Actionable Next Steps**.
+- Extracts core context: **Lead Context**, **Pain Points**, **Expressed Interest**, and **Next Steps**.
 - Applies prompt guardrails that enforce conciseness (< 120 words) and strictly forbid inventing unmentioned commitments, pricing, or dates.
 
 ### 2. Follow-up Email Generation (`/api/ai/followup`)

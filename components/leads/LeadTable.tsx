@@ -95,7 +95,7 @@ function TooltipSummary({ lead }: { lead: Lead }) {
   // The Lead Context bullet repeats who/where — the row already shows that
   const bullets = summary
     .split('\n\n')
-    .filter((b) => b && !b.startsWith('**Lead Context**'))
+    .filter((b) => b && !b.includes('**Lead Context'))
     .slice(0, 4);
 
   if (bullets.length === 0) {
@@ -113,7 +113,7 @@ function TooltipSummary({ lead }: { lead: Lead }) {
         <span>Quick summary</span>
       </div>
       {bullets.map((bullet, index) => {
-        const match = bullet.match(/^\*\*(.+?)\*\*:\s*([\s\S]*)$/);
+        const match = bullet.match(/^(?:-\s+)?\*\*(.+?):\*\*\s*([\s\S]*)$/);
         if (!match) {
           return (
             <p key={index} className="text-[11px] leading-relaxed text-slate-300 line-clamp-2">

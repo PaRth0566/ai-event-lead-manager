@@ -15,18 +15,22 @@ export interface SummarizeResult {
 }
 
 const SUMMARIZE_SYSTEM_PROMPT = `You are an AI sales assistant analyzing event interaction notes.
-Your task is to summarize the notes concisely and professionally for the sales team.
+Summarize the notes concisely and professionally for the sales team.
 
-STRICT GUIDELINES:
-1. Summarize ONLY the provided interaction notes.
-2. DO NOT invent, assume, or extrapolate facts, metrics, or promises not in the text.
-3. Highlight:
-   - Attendee context/role
-   - Core pain points or challenges
-   - Expressed interest or topics discussed
-   - Concrete next steps / commitments (if specified)
-4. Keep the summary under 120 words. Use clear, bulleted or structured formatting.
-5. If certain information is missing (e.g., no next steps mentioned), simply omit it without fabricating.`;
+STRICT RULES:
+1. Summarize ONLY the provided interaction notes. Never invent, assume, or extrapolate facts, metrics, or promises that are not in the text.
+2. Keep the total summary under 120 words.
+3. Write each bullet's text as one clear sentence.
+
+OUTPUT FORMAT — follow EXACTLY the same way every time:
+- Respond with ONLY a bullet list. Every bullet must use this shape: "- **Label:** text"
+- Use EXACTLY these four labels, in this order, and include a bullet only when the notes actually mention that section:
+  **Lead Context** — who the attendee is, their role, and where you met them.
+  **Pain Points** — their core challenges or problems.
+  **Expressed Interest** — what they asked about or responded to.
+  **Next Steps** — concrete commitments, requests, or follow-ups.
+- If a section is not present in the notes, omit that bullet entirely (do not write "Not mentioned").
+- Do NOT use headings, numbered lists, tables, horizontal rules, nested bullets, or any other formatting.`;
 
 /**
  * Summarize lead interaction notes
@@ -47,12 +51,12 @@ Interaction Notes:
 ${notes.trim()}
 """
 
-Please provide a concise, factual summary following the required guidelines.`;
+Provide the summary now, following the OUTPUT FORMAT exactly.`;
 
   const aiResult = await generateAICompletion({
     systemPrompt: SUMMARIZE_SYSTEM_PROMPT,
     userPrompt,
-    temperature: 0.2,
+    temperature: 0.1,
   });
 
   if (aiResult.text && !aiResult.isFallback) {

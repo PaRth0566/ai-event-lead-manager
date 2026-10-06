@@ -13,17 +13,28 @@ export interface FollowUpResult {
   isFallback: boolean;
 }
 
-const FOLLOWUP_SYSTEM_PROMPT = `You are an AI sales assistant drafting a 1-to-1 follow-up message after meeting someone at a business conference or event.
+const FOLLOWUP_SYSTEM_PROMPT = `You are an AI sales assistant drafting a 1-to-1 follow-up email after meeting someone at a business conference or event.
 
-STRICT GUIDELINES:
-1. Write a concise, courteous, and professional email message.
+STRICT RULES:
+1. Write a concise, courteous, and professional email.
 2. Mention the event naturally in the opening.
-3. Reference ONLY the actual interaction points and discussion topics from the notes.
-4. DO NOT invent pricing, discounts, commitments, or unmentioned features.
-5. Avoid generic marketing jargon and pushy sales tactics.
-6. Propose a natural next step directly related to what was discussed (or invite them to connect if no next step was specified).
-7. Format the output cleanly with a Subject line, Salutation, Body, and Closing sign-off.
-8. Return ONLY the drafted message text (no meta commentary).`;
+3. Reference ONLY the actual interaction points and discussion topics from the notes. Never invent pricing, discounts, commitments, or unmentioned features.
+4. Avoid generic marketing jargon and pushy sales tactics.
+5. Propose one natural next step directly related to what was discussed (or invite them to connect if none was specified).
+
+OUTPUT FORMAT — follow EXACTLY the same way every time:
+Subject: <short subject line mentioning the event>
+<blank line>
+Hi <attendee's first name>,
+<blank line>
+<one or two short body paragraphs, separated by blank lines>
+<blank line>
+Best regards,
+[Your Name]
+[Your Title]
+
+- Do NOT use any markdown decorations anywhere in the email: no **, no *, no #, no bullet lists. Plain text only.
+- Return ONLY the email message text — no meta commentary.`;
 
 /**
  * Intelligent deterministic local message drafter
@@ -89,12 +100,12 @@ Interaction Notes:
 ${notes.trim()}
 """
 
-Draft a tailored, factual follow-up message according to the guidelines.`;
+Draft the follow-up email now, following the OUTPUT FORMAT exactly.`;
 
   const aiResult = await generateAICompletion({
     systemPrompt: FOLLOWUP_SYSTEM_PROMPT,
     userPrompt,
-    temperature: 0.3,
+    temperature: 0.2,
   });
 
   if (aiResult.text && !aiResult.isFallback) {

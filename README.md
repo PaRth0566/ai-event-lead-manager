@@ -68,24 +68,60 @@ When sales and partnership teams attend fast-paced conferences (e.g. *Tech Summi
 
 ## Architecture
 
+### System Overview
+
+```mermaid
+flowchart TD
+    Browser["Browser — React client components<br/>Dashboard · Lead details · Forms"]
+
+    subgraph NextJS["Next.js App Router (server)"]
+        direction TB
+        Routes["API Route Handlers<br/>/api/leads · /api/leads/[id]<br/>/api/ai/summarize · /api/ai/followup"]
+        Zod["Zod validation<br/>(shared client + server schemas)"]
+        Repo["Repository layer — lib/db/leads.ts"]
+        AI["AI layer — lib/ai/"]
+    end
+
+    PG[("Supabase PostgreSQL<br/>RLS enabled · service-role writes")]
+    Demo[("In-memory demo store<br/>only when unconfigured")]
+    Gemini["Google Gemini API<br/>(server-side key)"]
+    Local["Deterministic local fallback<br/>lib/summary.ts"]
+
+    Browser -->|JSON over fetch| Routes
+    Routes --> Zod
+    Zod --> Repo
+    Routes --> AI
+    Repo -->|service-role key| PG
+    Repo -.->|credentials absent| Demo
+    AI --> Gemini
+    AI -.->|no key or API error| Local
 ```
-Browser Client (Desktop / Mobile UI)
-        │
-        ▼
-Next.js App Router (React Server & Client Components)
-        │
-        ├──► /api/leads (GET, POST)
-        ├──► /api/leads/[id] (GET, PATCH, DELETE)
-        ├──► /api/ai/summarize (POST)
-        └──► /api/ai/followup (POST)
-                │
-                ├──► Database Layer (lib/db/)
-                │       ├── Supabase PostgreSQL (Production)
-                │       └── Seeded Demo Repository (Zero-friction local dev)
-                │
-                └──► AI Service Layer (lib/ai/)
-                        ├── Server-Side Provider (OpenAI / Gemini / Anthropic)
-                        └── Deterministic NLP Synthesizer (Fallback engine)
+
+### Request Flow (Optimistic UI)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant C as Client UI
+    participant A as API Route
+    participant D as Supabase
+
+    U->>C: Change status / delete lead
+    C->>C: Optimistic update (instant)
+    C->>A: PATCH or DELETE (JSON)
+    A->>A: Zod validation
+    A->>D: Query via service-role key
+
+    alt Success
+        D-->>A: Result row
+        A-->>C: Canonical record
+        C-->>U: Success toast
+    else Failure
+        A-->>C: Error response
+        C->>C: Roll back affected lead only
+        C-->>U: Error toast
+    end
 ```
 
 ### Architectural Guardrails:
@@ -135,7 +171,7 @@ Conference conversations contain rich nuance (e.g. *"asked for pricing over 100k
 ### 1. Notes Summarization (`/api/ai/summarize`)
 - Takes raw interaction notes.
 - Applies strict constraints:
-  - Extracts **Lead Context**, **Core Pain Points**, **Areas of Interest**, and **Actionable Next Steps**.
+  - Extracts **Lead Context**, **Pain Points**, **Expressed Interest**, and **Next Steps**.
   - **No Hallucinations**: Strictly prohibits inventing pricing, dates, or unmentioned commitments.
   - Keeps output concise (< 120 words).
 
@@ -147,10 +183,27 @@ Conference conversations contain rich nuance (e.g. *"asked for pricing over 100k
   - Clear proposal for next steps based on the interaction.
   - Ready-to-copy text format with an interactive **Copy Message** button.
 
+### AI Response Pipeline
+
+Both endpoints follow one fixed pipeline — a pinned output template (same labels, same structure on every regeneration) with graceful degradation:
+
+```mermaid
+flowchart LR
+    Click["Summarize notes /<br/>Draft follow-up"] --> Post["POST /api/ai/*<br/>notes + lead context"]
+    Post --> Gemini["Gemini API<br/>pinned output template<br/>temperature 0.1–0.2"]
+    Post -.->|no key configured| Local["Local deterministic fallback<br/>(same canonical template)"]
+    Gemini -->|success| Render["Markdown renderer<br/>components/ui/Markdown.tsx"]
+    Gemini -.->|timeout / error| Local
+    Local --> Render
+    Render --> UI["Formatted summary /<br/>editable email draft"]
+    Render --> Copy["Copy = clean plain text<br/>lib/markdown.ts"]
+```
+
 ### AI Safety & Reliability
 - **Server-Side Execution**: All LLM requests execute in isolated Next.js API routes (`app/api/ai/`).
 - **Data Minimization**: The AI service receives only the attendee's name, company, event, and interaction notes. No internal credentials, database IDs, or unrelated data are transmitted.
-- **Built-In Local Fallback**: When evaluated offline or without API keys, an intelligent deterministic regex/keyword NLP parser produces factual summaries and personalized follow-ups.
+- **Built-In Local Fallback**: When evaluated offline or without API keys, a deterministic NLP parser produces summaries and follow-ups in the **same canonical template** as the AI — output structure stays consistent regardless of provider.
+- **Consistent Formatting**: Gemini responses are pinned to a fixed output template (bullet-labeled summaries, fixed email skeleton) and rendered through a constrained, dependency-free Markdown renderer — formatted output with no raw syntax and no HTML injection surface.
 
 ---
 

@@ -54,9 +54,10 @@ const NEXT_STEP_KEYWORDS = [
 ];
 
 /**
- * Produces a structured "**Label**: text" bullet summary from raw notes
- * without any external network calls. Bullets cover lead context, pain
- * points, expressed interest, and actionable next steps.
+ * Produces a summary in the SAME canonical template the AI prompts request:
+ * "- **Label:** text" bullets with the labels Lead Context, Pain Points,
+ * Expressed Interest, and Next Steps. Sections the notes don't mention are
+ * omitted, so fallback and AI output share one consistent format.
  */
 export function buildLocalSummary({ notes, name, company, event }: LocalSummaryParams): string {
   const cleanNotes = notes.trim();
@@ -80,30 +81,30 @@ export function buildLocalSummary({ notes, name, company, event }: LocalSummaryP
 
   // Attendee & Event Context
   if (name && company) {
-    bullets.push(`**Lead Context**: Met ${name} from ${company}${event ? ` at ${event}` : ''}.`);
+    bullets.push(`- **Lead Context:** Met ${name} from ${company}${event ? ` at ${event}` : ''}.`);
   } else if (sentences[0]) {
-    bullets.push(`**Lead Context**: ${sentences[0]}`);
+    bullets.push(`- **Lead Context:** ${sentences[0]}`);
   }
 
   // Pain Points
   if (painPoints.length > 0) {
-    bullets.push(`**Pain Point / Challenge**: ${painPoints.join(' ')}`);
+    bullets.push(`- **Pain Points:** ${painPoints.join(' ')}`);
   }
 
   // Interest / Discussion
   if (interests.length > 0) {
-    bullets.push(`**Areas of Interest**: ${interests.join(' ')}`);
+    bullets.push(`- **Expressed Interest:** ${interests.join(' ')}`);
   } else if (
     sentences.length > 1 &&
     !painPoints.includes(sentences[1]) &&
     !nextSteps.includes(sentences[1])
   ) {
-    bullets.push(`**Discussion Highlights**: ${sentences[1]}`);
+    bullets.push(`- **Expressed Interest:** ${sentences[1]}`);
   }
 
   // Next Steps
   if (nextSteps.length > 0) {
-    bullets.push(`**Actionable Next Steps**: ${nextSteps.join(' ')}`);
+    bullets.push(`- **Next Steps:** ${nextSteps.join(' ')}`);
   }
 
   if (bullets.length === 0) {

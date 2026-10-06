@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'bun:test';
 import { parseMarkdown, markdownToPlainText, stripInlineMarkdown } from '../lib/markdown';
+import { buildLocalSummary } from '../lib/summary';
+
+const CANONICAL_LABELS = ['Lead Context', 'Pain Points', 'Expressed Interest', 'Next Steps'];
 
 describe('Markdown Parser (AI response rendering)', () => {
   const geminiStyleSummary = `* **Attendee Context/Role:** Sarah Jenkins, Founder at Pulse Dynamics (building an AI-assisted healthcare workflow engine).
@@ -70,5 +73,49 @@ Best regards,
     expect(stripInlineMarkdown('See [our site](https://example.com) for details')).toBe(
       'See our site for details'
     );
+  });
+});
+
+describe('Summary format consistency (AI template vs local fallback)', () => {
+  const notes =
+    'Met Rahul at Tech Summit. He manages sales at Acme. They currently struggle with reporting. He was interested in our analytics product and asked for a demo next week.';
+
+  it('local fallback emits the exact canonical "- **Label:** text" template', () => {
+    const summary = buildLocalSummary({
+      notes,
+      name: 'Rahul Sharma',
+      company: 'Acme',
+      event: 'Tech Summit 2026',
+    });
+    const bullets = summary.split('\n\n');
+    expect(bullets.length).toBeGreaterThan(1);
+    for (const bullet of bullets) {
+      const match = bullet.match(/^- \*\*(Lead Context|Pain Points|Expressed Interest|Next Steps):\*\* /);
+      expect(match).not.toBeNull();
+    }
+    // Labels appear in the canonical order
+    const labels = bullets.map((b) => b.match(/\*\*(.+?):\*\*/)?.[1]);
+    expect(labels).toEqual([...labels].sort((a, b) => CANONICAL_LABELS.indexOf(a!) - CANONICAL_LABELS.indexOf(b!)));
+  });
+
+  it('parses the canonical template into the same structure as AI output', () => {
+    const local = parseMarkdown(
+      buildLocalSummary({ notes, name: 'Rahul Sharma', company: 'Acme', event: 'Tech Summit 2026' })
+    );
+    const ai = parseMarkdown(
+      '- **Lead Context:** Met Rahul Sharma from Acme at Tech Summit 2026.\n\n- **Next Steps:** Asked for a demo next week.'
+    );
+    expect(local[0].type).toBe('ul');
+    expect(ai[0].type).toBe('ul');
+    if (local[0].type === 'ul' && ai[0].type === 'ul') {
+      expect(local[0].items.length).toBeGreaterThan(1);
+      expect(ai[0].items.length).toBe(2);
+    }
+    // Both convert to clean plain text with no markdown symbols
+    const plain = markdownToPlainText(
+      buildLocalSummary({ notes, name: 'Rahul Sharma', company: 'Acme', event: 'Tech Summit 2026' })
+    );
+    expect(plain).not.toContain('**');
+    expect(plain).toContain('• Lead Context: Met Rahul Sharma from Acme');
   });
 });

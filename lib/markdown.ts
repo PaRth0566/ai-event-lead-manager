@@ -110,6 +110,12 @@ export function parseMarkdown(md: string): MarkdownBlock[] {
           i += 1;
           continue;
         }
+        // Blank line: keep the list open (loose list) when the next line
+        // continues it with the same marker style
+        if (!lines[i].trim() && items.length > 0 && lines[i + 1] && listRe.test(lines[i + 1])) {
+          i += 1;
+          continue;
+        }
         // Continuation line: indented, non-empty, no new list marker
         const current = lines[i];
         if (current.trim() && /^\s{2,}/.test(current) && items.length > 0) {

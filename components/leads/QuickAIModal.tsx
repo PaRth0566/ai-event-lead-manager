@@ -4,8 +4,10 @@ import React, { useState } from 'react';
 import { Lead } from '@/types/lead';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import { Markdown } from '@/components/ui/Markdown';
 import { copyTextToClipboard } from '@/lib/clipboard';
-import { FileText, Send, Copy, Check, AlertCircle, RefreshCw } from 'lucide-react';
+import { markdownToPlainText } from '@/lib/markdown';
+import { FileText, Send, Copy, Check, AlertCircle, RefreshCw, Pencil, Eye } from 'lucide-react';
 
 interface QuickAIModalProps {
   lead: Lead | null;
@@ -30,6 +32,7 @@ export function QuickAIModal({ lead, isOpen, onClose, onFeedback }: QuickAIModal
   const [isDrafting, setIsDrafting] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
   const [draftError, setDraftError] = useState<string | null>(null);
+  const [isEditingDraft, setIsEditingDraft] = useState(false);
 
   const [copied, setCopied] = useState<'summary' | 'draft' | null>(null);
 
@@ -87,6 +90,7 @@ export function QuickAIModal({ lead, isOpen, onClose, onFeedback }: QuickAIModal
       }
 
       setDraft(data.data.draft);
+      setIsEditingDraft(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Couldn't generate follow-up draft.";
       setDraftError(msg);
@@ -96,7 +100,7 @@ export function QuickAIModal({ lead, isOpen, onClose, onFeedback }: QuickAIModal
   };
 
   const handleCopy = async (text: string, type: 'summary' | 'draft') => {
-    const ok = await copyTextToClipboard(text);
+    const ok = await copyTextToClipboard(markdownToPlainText(text));
     if (ok) {
       setCopied(type);
       onFeedback?.(type === 'summary' ? 'Summary copied' : 'Follow-up copied', 'success');
@@ -215,8 +219,8 @@ export function QuickAIModal({ lead, isOpen, onClose, onFeedback }: QuickAIModal
                 </button>
               </div>
             </div>
-            <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line break-words">
-              {summary}
+            <div className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+              <Markdown text={summary} />
             </div>
           </div>
         )}
@@ -246,6 +250,15 @@ export function QuickAIModal({ lead, isOpen, onClose, onFeedback }: QuickAIModal
                 </button>
                 <button
                   type="button"
+                  onClick={() => setIsEditingDraft((prev) => !prev)}
+                  className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer"
+                  aria-label={isEditingDraft ? 'Preview formatted draft' : 'Edit draft as plain text'}
+                  title={isEditingDraft ? 'Preview formatting' : 'Edit draft text'}
+                >
+                  {isEditingDraft ? <Eye className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  type="button"
                   onClick={handleDraft}
                   disabled={isDrafting}
                   className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer disabled:cursor-not-allowed"
@@ -255,15 +268,23 @@ export function QuickAIModal({ lead, isOpen, onClose, onFeedback }: QuickAIModal
                 </button>
               </div>
             </div>
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              rows={7}
-              className="w-full max-w-full box-border text-xs sm:text-sm text-slate-800 bg-slate-50/70 p-3 rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white resize-y leading-relaxed font-sans"
-              aria-label="Editable follow-up email draft"
-            />
+            {isEditingDraft ? (
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                rows={7}
+                className="w-full max-w-full box-border text-xs sm:text-sm text-slate-800 bg-slate-50/70 p-3 rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white resize-y leading-relaxed font-sans"
+                aria-label="Editable follow-up email draft"
+              />
+            ) : (
+              <div className="bg-slate-50/70 p-3 rounded-md border border-slate-200">
+                <Markdown text={draft} />
+              </div>
+            )}
             <p className="text-[11px] text-slate-400 mt-1">
-              Editable — review or tweak the draft before copying.
+              {isEditingDraft
+                ? 'Editing plain text — switch back to preview to see the formatting.'
+                : 'Review the formatted draft, or edit its text before copying.'}
             </p>
           </div>
         )}

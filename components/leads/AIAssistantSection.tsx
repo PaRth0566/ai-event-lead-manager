@@ -5,8 +5,10 @@ import { Lead } from '@/types/lead';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { Markdown } from '@/components/ui/Markdown';
 import { copyTextToClipboard } from '@/lib/clipboard';
-import { FileText, Send, Copy, Check, AlertCircle, RefreshCw } from 'lucide-react';
+import { markdownToPlainText } from '@/lib/markdown';
+import { FileText, Send, Copy, Check, AlertCircle, RefreshCw, Pencil, Eye } from 'lucide-react';
 
 interface AIAssistantSectionProps {
   lead: Lead;
@@ -23,6 +25,7 @@ export function AIAssistantSection({ lead, onFeedback }: AIAssistantSectionProps
   const [draft, setDraft] = useState<string | null>(null);
   const [draftError, setDraftError] = useState<string | null>(null);
   const [draftCopied, setDraftCopied] = useState(false);
+  const [isEditingDraft, setIsEditingDraft] = useState(false);
 
   const handleSummarize = async () => {
     setIsSummarizing(true);
@@ -77,6 +80,7 @@ export function AIAssistantSection({ lead, onFeedback }: AIAssistantSectionProps
       }
 
       setDraft(data.data.draft);
+      setIsEditingDraft(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Couldn't generate follow-up draft. Please try again.";
       setDraftError(msg);
@@ -188,7 +192,7 @@ export function AIAssistantSection({ lead, onFeedback }: AIAssistantSectionProps
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(summary, 'summary')}
+                  onClick={() => copyToClipboard(markdownToPlainText(summary), 'summary')}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white px-2.5 py-1 rounded border border-slate-200 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   {summaryCopied ? (
@@ -217,8 +221,8 @@ export function AIAssistantSection({ lead, onFeedback }: AIAssistantSectionProps
               </div>
             </div>
 
-            <div className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line break-words font-normal">
-              {summary}
+            <div className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+              <Markdown text={summary} />
             </div>
           </div>
         )}
@@ -229,9 +233,19 @@ export function AIAssistantSection({ lead, onFeedback }: AIAssistantSectionProps
             <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100">
               <span className="text-xs font-semibold text-slate-900">Follow-up Draft</span>
               <div className="flex items-center gap-2">
+                <Tooltip label={isEditingDraft ? 'Preview formatting' : 'Edit draft text'}>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingDraft((prev) => !prev)}
+                    className="p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer"
+                    aria-label={isEditingDraft ? 'Preview formatted draft' : 'Edit draft as plain text'}
+                  >
+                    {isEditingDraft ? <Eye className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                  </button>
+                </Tooltip>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(draft, 'draft')}
+                  onClick={() => copyToClipboard(markdownToPlainText(draft), 'draft')}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-md shadow-2xs transition-colors cursor-pointer"
                 >
                   {draftCopied ? (
@@ -261,15 +275,23 @@ export function AIAssistantSection({ lead, onFeedback }: AIAssistantSectionProps
             </div>
 
             <div>
-              <textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                rows={8}
-                className="w-full max-w-full box-border text-xs sm:text-sm text-slate-800 bg-slate-50/70 p-3 rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white resize-y leading-relaxed font-sans"
-                aria-label="Editable follow-up email draft"
-              />
+              {isEditingDraft ? (
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  rows={8}
+                  className="w-full max-w-full box-border text-xs sm:text-sm text-slate-800 bg-slate-50/70 p-3 rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:bg-white resize-y leading-relaxed font-sans"
+                  aria-label="Editable follow-up email draft"
+                />
+              ) : (
+                <div className="bg-slate-50/70 p-3 rounded-md border border-slate-200">
+                  <Markdown text={draft} />
+                </div>
+              )}
               <p className="text-[11px] text-slate-400 mt-1">
-                You can review or edit this draft directly before copying.
+                {isEditingDraft
+                  ? 'Editing plain text — switch back to preview to see the formatting.'
+                  : 'Review the formatted draft, or edit its text before copying.'}
               </p>
             </div>
           </div>

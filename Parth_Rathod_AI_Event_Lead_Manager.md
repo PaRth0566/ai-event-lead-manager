@@ -36,7 +36,7 @@ The application resolves this problem by providing a streamlined, mobile-friendl
 | Backend/API | Next.js Route Handlers (Serverless Architecture) |
 | AI | Google Gemini (`gemini-flash-lite-latest`) with server-side provider abstraction |
 | Validation | Zod 4 (Shared client and server schemas) |
-| Testing | Bun Test (25 unit and schema validation tests) |
+| Testing | Bun Test (31 unit, schema, and markdown rendering tests) |
 | Deployment | Vercel (Global Edge Hosting) & Supabase (Managed Cloud Database) |
 
 ---
@@ -130,7 +130,7 @@ Data persistence is handled by PostgreSQL hosted on Supabase. The schema is defi
 
 The application has been verified through automated test suites, static analysis, type checking, and production compilation:
 
-- **Automated Unit & Validation Tests**: **25/25 tests passed** (executed via Bun Test across `tests/aiServices.test.ts`, `tests/leadsRepository.test.ts`, and `tests/leadValidation.test.ts`).
+- **Automated Unit & Validation Tests**: **31/31 tests passed** (executed via Bun Test across `tests/aiServices.test.ts`, `tests/leadsRepository.test.ts`, `tests/leadValidation.test.ts`, and `tests/markdown.test.ts`).
   - *Lead Schema Validation*: Valid inputs, boundary limits, invalid email patterns, whitespace trimming, and status constraints.
   - *Repository Operations*: Full CRUD lifecycle, UUID assignment, timestamp verification, combined search and status filtering, and safe non-existent ID handling.
   - *AI Services*: Context extraction, parameter validation, and prompt integrity.
@@ -221,4 +221,4 @@ This submission package contains:
 - **Live Deployed Application** hosted on Vercel with real-time response times.
 - **Persistent Cloud Database** configured on Supabase with Row Level Security and schema migrations.
 - **Production AI Features** powered server-side by Google Gemini with deterministic fallback handling.
-- **Automated Test Suite** with 25 passing unit and validation tests.
+- **Automated Test Suite** with 31 passing unit, validation, and rendering tests.

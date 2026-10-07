@@ -111,6 +111,13 @@ describe('Leads Repository CRUD Operations', () => {
     expect(deleted).toBe(false);
   });
 
+  it('treats malformed (non-UUID) lead IDs as not found, not errors', async () => {
+    const malformedId = 'not-a-uuid';
+    expect(await getLeadById(malformedId)).toBeNull();
+    expect(await updateLead(malformedId, { notes: 'Should fail' })).toBeNull();
+    expect(await deleteLead(malformedId)).toBe(false);
+  });
+
   it('combines search and status filters simultaneously', async () => {
     const results = await getLeads({ search: 'Tech Summit', status: 'pending' });
     expect(

@@ -156,10 +156,17 @@ export async function getLeads(filters?: LeadFilters): Promise<Lead[]> {
   return leads;
 }
 
+// Postgres rejects non-UUID strings in id=eq.<value> with a 22P02 cast error,
+// which would surface as a 500. Pre-validate so malformed IDs behave exactly
+// like missing records (404 / not-found UI).
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Retrieve a single lead by its UUID
  */
 export async function getLeadById(id: string): Promise<Lead | null> {
+  if (!UUID_PATTERN.test(id)) return null;
+
   const supabase = getSupabaseServerClient();
 
   if (supabase) {
@@ -229,6 +236,8 @@ export async function createLead(input: CreateLeadInput): Promise<Lead> {
  * Update an existing lead record
  */
 export async function updateLead(id: string, input: UpdateLeadInput): Promise<Lead | null> {
+  if (!UUID_PATTERN.test(id)) return null;
+
   const now = new Date().toISOString();
   const supabase = getSupabaseServerClient();
 
@@ -284,6 +293,8 @@ export async function updateLead(id: string, input: UpdateLeadInput): Promise<Le
  * Delete a lead by ID
  */
 export async function deleteLead(id: string): Promise<boolean> {
+  if (!UUID_PATTERN.test(id)) return false;
+
   const supabase = getSupabaseServerClient();
 
   if (supabase) {
